@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>门店重新分配查询</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.08);
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+            pointer-events: none;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .search-section {
+            padding: 40px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .search-form {
+            display: flex;
+            gap: 15px;
+            align-items: flex-end;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .input-group label {
+            font-weight: 600;
+            color: #495057;
+            font-size: 0.9em;
+        }
+
+        .input-group input {
+            padding: 15px 20px;
+            border: 2px solid #e1e8ed;
+            border-radius: 12px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            min-width: 250px;
+            background: white;
+            height: 52px;
+            box-sizing: border-box;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .btn {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 140px;
+            height: 52px;
+            box-sizing: border-box;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(52, 152, 219, 0.4);
+            background: linear-gradient(135deg, #2980b9 0%, #1f5f8b 100%);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .results-section {
+            padding: 30px;
+            display: none;
+        }
+
+        .results-section.show {
+            display: block;
+        }
+
+        .shop-info {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 36px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            border-left: 6px solid #3498db;
+            border: 1px solid rgba(52, 152, 219, 0.1);
+        }
+
+        .shop-info h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.4em;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            column-gap: 24px;
+            row-gap: 6px;
+            margin-bottom: 12px;
+            align-items: center;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 0;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #6c757d;
+            white-space: nowrap;
+        }
+
+        .info-value {
+            color: #2c3e50;
+            font-weight: 500;
+            word-break: break-all;
+        }
+
+        .near-routes {
+            margin-top: 28px;
+        }
+
+        .near-routes h4 {
+            color: #495057;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .near-routes h4::before {
+            content: "📍";
+            font-size: 1.2em;
+        }
+
+        .route-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 14px;
+            padding: 18px 20px;
+            margin-bottom: 16px;
+            border-left: 5px solid #27ae60;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(39, 174, 96, 0.1);
+        }
+
+        .route-card:hover {
+            transform: translateX(8px) translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+        }
+
+        .route-card.own-route {
+            border-left-color: #3498db;
+            background: linear-gradient(135deg, #ebf3fd 0%, #f0f8ff 100%);
+            border: 1px solid rgba(52, 152, 219, 0.15);
+        }
+
+        .route-header {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 8px 16px;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .route-id {
+            font-weight: 700;
+            color: #2c3e50;
+            font-size: 1.1em;
+        }
+
+        .duration-badge {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 25px;
+            font-size: 0.9em;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+        }
+
+        .route-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            column-gap: 24px;
+            row-gap: 8px;
+            font-size: 0.95em;
+            align-items: center;
+        }
+
+        .route-detail {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .route-detail-label {
+            color: #6c757d;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .route-detail-value {
+            color: #2c3e50;
+            font-weight: 600;
+            word-break: break-all;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        .no-results i {
+            font-size: 3em;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        .loading::after {
+            content: "";
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%);
+            color: #d63031;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(214, 48, 49, 0.2);
+            margin: 20px 0;
+            box-shadow: 0 4px 15px rgba(214, 48, 49, 0.1);
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 14px;
+            text-align: center;
+            box-shadow: 0 6px 20px rgba(44, 62, 80, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(44, 62, 80, 0.3);
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        @media (max-width: 1024px) {
+            .route-details {
+                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+                column-gap: 16px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .search-form {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .input-group input {
+                min-width: auto;
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .route-card { padding: 14px; }
+            .route-details { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>门店转派查询</h1>
+            <p>输入门店ID，查看附近可转派稽核人员与路线信息</p>
+        </div>
+
+        <div class="search-section">
+            <form class="search-form" id="searchForm">
+                <div class="input-group">
+                    <label for="shopId">门店ID</label>
+                    <input type="text" id="shopId" placeholder="请输入门店ID" required>
+                </div>
+                <button type="submit" class="btn" id="searchBtn">查询</button>
+            </form>
+        </div>
+
+        <div class="results-section" id="resultsSection">
+            <div id="loadingDiv" class="loading">正在加载数据...</div>
+            <div id="errorDiv" class="error-message" style="display: none;"></div>
+            <div id="noResultsDiv" class="no-results" style="display: none;">
+                <i>🔍</i>
+                <h3>未找到相关门店信息</h3>
+                <p>请检查门店ID是否正确，或该门店暂无附近路线信息</p>
+            </div>
+            <div id="resultsContent" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        let reassignmentData = null;
+
+        // 加载JSON数据
+        async function loadData() {
+            try {
+                const response = await fetch('shop_reassignment_info_2025-09-23.json');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                reassignmentData = await response.json();
+                console.log('数据加载成功:', reassignmentData.length, '条记录');
+            } catch (error) {
+                console.error('数据加载失败:', error);
+                showError('数据加载失败: ' + error.message);
+            }
+        }
+
+        // 显示错误信息
+        function showError(message) {
+            document.getElementById('loadingDiv').style.display = 'none';
+            document.getElementById('errorDiv').style.display = 'block';
+            document.getElementById('errorDiv').textContent = message;
+            document.getElementById('noResultsDiv').style.display = 'none';
+            document.getElementById('resultsContent').style.display = 'none';
+        }
+
+        // 显示无结果
+        function showNoResults() {
+            document.getElementById('loadingDiv').style.display = 'none';
+            document.getElementById('errorDiv').style.display = 'none';
+            document.getElementById('noResultsDiv').style.display = 'block';
+            document.getElementById('resultsContent').style.display = 'none';
+        }
+
+        // 显示结果
+        function showResults(shopInfo) {
+            document.getElementById('loadingDiv').style.display = 'none';
+            document.getElementById('errorDiv').style.display = 'none';
+            document.getElementById('noResultsDiv').style.display = 'none';
+            
+            const resultsContent = document.getElementById('resultsContent');
+            resultsContent.innerHTML = generateResultsHTML(shopInfo);
+            resultsContent.style.display = 'block';
+        }
+
+        // 生成结果HTML
+        function generateResultsHTML(shopInfo) {
+            const currentPerson = shopInfo.current_person_name;
+            const nearRoutes = shopInfo.near_routes;
+            
+            // 统计信息
+            const totalRoutes = nearRoutes.length;
+            const ownRoutes = nearRoutes.filter(route => route.person_name === currentPerson).length;
+            const otherRoutes = totalRoutes - ownRoutes;
+            const minDuration = Math.min(...nearRoutes.map(route => route.duration_hours));
+            
+            let html = `
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-number">${totalRoutes}</div>
+                        <div class="stat-label">附近路线总数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${ownRoutes}</div>
+                        <div class="stat-label">本人路线</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${otherRoutes}</div>
+                        <div class="stat-label">他人路线</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${minDuration.toFixed(1)}h</div>
+                        <div class="stat-label">最近距离</div>
+                    </div>
+                </div>
+                
+                <div class="shop-info">
+                    <h3>🏪 门店信息</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">门店ID:</span>
+                            <span class="info-value">${shopInfo.shop_id}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">门店名称:</span>
+                            <span class="info-value">${shopInfo.shop_name || '未提供'}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">当前路线ID:</span>
+                            <span class="info-value">${shopInfo.current_route_id}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">当前稽核人员:</span>
+                            <span class="info-value">${shopInfo.current_person_name}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="near-routes">
+                        <h4>附近可重新分配路线</h4>
+            `;
+
+            nearRoutes.forEach(route => {
+                const isOwnRoute = route.person_name === currentPerson;
+                const routeClass = isOwnRoute ? 'route-card own-route' : 'route-card';
+                const planStart = route.plan_start_date || route.plan_start_datre || '';
+                const planEnd = route.plan_end_date || '';
+                
+                html += `
+                    <div class="${routeClass}">
+                        <div class="route-header">
+                            <span class="route-id">路线 ${route.route_id}</span>
+                            <span class="duration-badge">${route.duration_hours}小时</span>
+                        </div>
+                        <div class="route-details">
+                            <div class="route-detail">
+                                <span class="route-detail-label">稽核人员:</span>
+                                <span class="route-detail-value">${route.person_name}</span>
+                            </div>
+                            <div class="route-detail">
+                                <span class="route-detail-label">最近门店ID:</span>
+                                <span class="route-detail-value">${route.nearest_shop_id}</span>
+                            </div>
+                            <div class="route-detail">
+                                <span class="route-detail-label">计划开始:</span>
+                                <span class="route-detail-value">${planStart || '-'}</span>
+                            </div>
+                            <div class="route-detail">
+                                <span class="route-detail-label">计划结束:</span>
+                                <span class="route-detail-value">${planEnd || '-'}</span>
+                            </div>
+                            <div class="route-detail">
+                                <span class="route-detail-label">类型:</span>
+                                <span class="route-detail-value">${isOwnRoute ? '本人路线' : '他人路线'}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `
+                    </div>
+                </div>
+            `;
+
+            return html;
+        }
+
+        // 搜索功能
+        function searchShop(shopId) {
+            if (!reassignmentData) {
+                showError('数据尚未加载完成，请稍后重试');
+                return;
+            }
+
+            const shopInfo = reassignmentData.find(shop => 
+                shop.shop_id.toString().toLowerCase() === shopId.toString().toLowerCase()
+            );
+
+            if (shopInfo) {
+                showResults(shopInfo);
+            } else {
+                showNoResults();
+            }
+        }
+
+        // 表单提交处理
+        document.getElementById('searchForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const shopId = document.getElementById('shopId').value.trim();
+            if (!shopId) {
+                alert('请输入门店ID');
+                return;
+            }
+
+            // 显示结果区域和加载状态
+            document.getElementById('resultsSection').classList.add('show');
+            document.getElementById('loadingDiv').style.display = 'block';
+            document.getElementById('errorDiv').style.display = 'none';
+            document.getElementById('noResultsDiv').style.display = 'none';
+            document.getElementById('resultsContent').style.display = 'none';
+
+            // 执行搜索
+            searchShop(shopId);
+        });
+
+        // 页面加载完成后加载数据
+        window.addEventListener('load', function() {
+            loadData();
+        });
+    </script>
+</body>
+</html>
