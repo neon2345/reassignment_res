@@ -413,38 +413,19 @@
     <script>
         let reassignmentData = null;
 
-        // 加载JSON数据（带路径回退与类型校验）
+        // 加载JSON数据
         async function loadData() {
-            const candidatePaths = [
-                './shop_reassignment_info_2025-09-23.json',
-                'shop_reassignment_info_2025-09-23.json',
-                '../shop_reassignment_info_2025-09-23.json'
-            ];
-
-            let lastError = null;
-            for (const path of candidatePaths) {
-                try {
-                    const response = await fetch(path, { cache: 'no-cache' });
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status} for ${path}`);
-                    }
-                    const contentType = response.headers.get('content-type') || '';
-                    if (!contentType.includes('application/json') && !contentType.includes('text/json')) {
-                        // 尝试读取文本，便于定位返回了HTML等内容
-                        const preview = (await response.text()).slice(0, 120);
-                        throw new Error(`非JSON响应(${contentType})，返回片段: ${preview}`);
-                    }
-                    reassignmentData = await response.json();
-                    console.log(`数据加载成功(${path}):`, reassignmentData.length, '条记录');
-                    return; // 成功后直接返回
-                } catch (err) {
-                    lastError = err;
-                    console.warn(`加载失败(${path}):`, err.message);
+            try {
+                const response = await fetch('shop_reassignment_info.json');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
+                reassignmentData = await response.json();
+                console.log('数据加载成功:', reassignmentData.length, '条记录');
+            } catch (error) {
+                console.error('数据加载失败:', error);
+                showError('数据加载失败: ' + error.message);
             }
-
-            const tried = candidatePaths.join(', ');
-            showError(`数据加载失败。已尝试路径: ${tried}。最后错误：${lastError ? lastError.message : '未知错误'}`);
         }
 
         // 显示错误信息
